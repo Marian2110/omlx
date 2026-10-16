@@ -3422,10 +3422,11 @@ class VLMBatchedEngine(BaseEngine):
             elif msg_num_videos > 0:
                 # Qwen3-VL chat templates render {"type": "video"} as the
                 # vision_start/video_pad/vision_end block the processor expands
-                # into timestamped temporal patches. Keep the clip where the
-                # user placed it relative to the text.
+                # into timestamped temporal patches. Keep clips and images
+                # where the user placed them relative to the text.
                 video_content: list[dict[str, Any]] = []
                 inserted_videos = 0
+                inserted_images = 0
                 for item in raw_content:
                     if isinstance(item, dict):
                         item_type = item.get("type", "")
@@ -3437,6 +3438,10 @@ class VLMBatchedEngine(BaseEngine):
                         if inserted_videos < msg_num_videos:
                             video_content.append({"type": "video"})
                             inserted_videos += 1
+                    elif item_type in image_part_types:
+                        if inserted_images < msg_num_images:
+                            video_content.append({"type": "image"})
+                            inserted_images += 1
                     elif item_type == "text" and item_text:
                         video_content.append({"type": "text", "text": item_text})
                 formatted_messages.append({"role": role, "content": video_content})

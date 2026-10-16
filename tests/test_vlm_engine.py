@@ -3630,6 +3630,36 @@ class TestNativeVideo:
         assert all("video" not in str(msg["content"]) for msg in formatted[1:])
         assert image_ranges == []
 
+    def test_format_keeps_images_next_to_a_clip(self):
+        engine = self._engine()
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    _image_part(32, 32),
+                    {"type": "text", "text": "and"},
+                    _video_part(),
+                ],
+            },
+            {"role": "assistant", "content": "Seen."},
+            {
+                "role": "user",
+                "content": [_image_part(32, 32), {"type": "text", "text": "Now?"}],
+            },
+        ]
+
+        formatted, image_ranges = engine._format_messages_for_vlm_template(
+            messages, num_images=2, num_videos=1
+        )
+
+        assert formatted[0]["content"] == [
+            {"type": "image"},
+            {"type": "text", "text": "and"},
+            {"type": "video"},
+        ]
+        assert "image" in str(formatted[2]["content"])
+        assert image_ranges == [(0, 1), (2, 1)]
+
     def test_video_cache_identity_covers_content_and_sampling(self):
         engine = self._engine()
         video = SimpleNamespace(
